@@ -1,57 +1,90 @@
-{ lib, stdenv, fetchurl, fetchpatch, meson, ninja, pkg-config, wayland-scanner, python3
-, wayland, libGL, mesa, libxkbcommon, cairo, libxcb
-, libXcursor, xlibsWrapper, udev, libdrm, mtdev, libjpeg, pam, dbus, libinput, libevdev
+{ lib, stdenv, fetchgit, fetchpatch, meson, ninja, pkg-config, wayland-scanner
+, python3, wayland, libGL, mesa, libxkbcommon, cairo, libxcb, seatd
+, libXcursor, xlibsWrapper, udev, libdrm, mtdev, libjpeg, pam, dbus, libinput, libevdev, pixman
 , colord, lcms2, pipewire ? null
 , pango ? null, libunwind ? null, freerdp ? null, vaapi ? null, libva ? null
-, libwebp ? null, xwayland ? null, wayland-protocols
+, libwebp ? null, xwayland ? null, wayland-protocols, imx-gpu-viv, imx-g2d, makeWrapper
 # beware of null defaults, as the parameters *are* supplied by callPackage by default
 }:
 
+with lib;
 stdenv.mkDerivation rec {
   pname = "weston";
-  version = "10.0.1";
+  version = "10.0.0";
 
-  src = fetchurl {
-    url = "https://gitlab.freedesktop.org/wayland/weston/-/releases/${version}/downloads/weston-${version}.tar.xz";
-    sha256 = "05a10gfbadyxkwgsncc5vc343f493csgh10vk0878nl6d98557la";
+  src = fetchgit {
+    url = "https://source.codeaurora.org/external/imx/weston-imx.git";
+    rev = "lf-5.15.32-2.0.0";
+    sha256 = "sha256-V8LI29YWKZRy4dD7FtGPgohJ+E/AQHLKtcN2oMKaldQ=";
   };
 
   patches = [
-    # Fix race condition in build system
-    (fetchpatch {
-      url = "https://gitlab.freedesktop.org/wayland/weston/-/commit/0d3e438d080433ed5d203c876e7de6c7f8a14f98.patch";
-      sha256 = "sha256-d9NG1vUIuL4jpXqCo0myz/97JuFYesH+8kJnegQXeMU=";
-    })
+    ./fix-g2d-renderer.patch
+    ./fix-wayland-scanner-path.patch
+    ./dont-use-plane-add-prop.patch
+    ./fix-gbm-path.patch
   ];
 
-  nativeBuildInputs = [ meson ninja pkg-config wayland-scanner python3 ];
+  depsBuildBuild = [pkg-config];
+  nativeBuildInputs = [ meson ninja pkg-config python3 wayland-scanner makeWrapper ];
   buildInputs = [
-    wayland libGL mesa libxkbcommon cairo libxcb libXcursor xlibsWrapper udev libdrm
-    mtdev libjpeg pam dbus libinput libevdev pango libunwind freerdp vaapi libva
-    libwebp wayland-protocols
-    colord lcms2 pipewire
+    wayland libGL mesa libxkbcommon cairo /* libxcb libXcursor xlibsWrapper udev */ libdrm
+    /* mtdev libjpeg pam dbus */ libinput libevdev /* pango libunwind freerdp vaapi libva */ pixman
+    /* libwebp */ wayland-protocols imx-gpu-viv imx-g2d
+  #   colord lcms2 pipewire
   ];
 
-  mesonFlags= [
-    "-Dbackend-drm-screencast-vaapi=${lib.boolToString (vaapi != null)}"
-    "-Dbackend-rdp=${lib.boolToString (freerdp != null)}"
-    "-Dxwayland=${lib.boolToString (xwayland != null)}" # Default is true!
-    "-Dremoting=false" # TODO
-    "-Dpipewire=${lib.boolToString (pipewire != null)}"
-    "-Dimage-webp=${lib.boolToString (libwebp != null)}"
-    "-Ddemo-clients=false"
+  mesonFlags = [
+    "-Dimage-jpeg=false"
+    "-Dimage-webp=false"
+    "-Dlauncher-logind=false"
+    # "-Dlauncher-libseat=true"
+    "-Drenderer-gl=true"
+    "-Drenderer-g2d=true"
+    "-Degl=true"
+    "-Dopengl=true"
+    "-Dimxgpu=true"
+    "-Dbackend-drm-screencast-vaapi=false"
+    "-Dbackend-drm=true"
+    "-Dbackend-default=drm"
+    "-Dbackend-rdp=false"
+    "-Dxwayland=false"
+    "-Dcolor-management-lcms=false"
+    "-Dcolor-management-colord=false"
+    "-Dremoting=false"
+    "-Dpipewire=false"
     "-Dsimple-clients="
+    "-Ddemo-clients=false"
     "-Dtest-junit-xml=false"
-    # TODO:
-    #"--enable-clients"
-    #"--disable-setuid-install" # prevent install target to chown root weston-launch, which fails
-  ] ++ lib.optionals (xwayland != null) [
-    "-Dxwayland-path=${xwayland.out}/bin/Xwayland"
+    "-Dsystemd=false"
+    "-Dlauncher-logind=false"
+    "-Dbackend-x11=false"
   ];
+
+  # mesonFlags= [
+  #   "-Dbackend-drm-screencast-vaapi=${boolToString (vaapi != null)}"
+  #   "-Dbackend-rdp=${boolToString (freerdp != null)}"
+  #   "-Dxwayland=${boolToString (xwayland != null)}" # Default is true!
+  #   "-Dremoting=false" # TODO
+  #   "-Dpipewire=${boolToString (pipewire != null)}"
+  #   "-Dimage-webp=${boolToString (libwebp != null)}"
+  #   "-Ddemo-clients=false"
+  #   "-Dsimple-clients="
+  #   "-Dtest-junit-xml=false"
+  #   # TODO:
+  #   #"--enable-clients"
+  #   #"--disable-setuid-install" # prevent install target to chown root weston-launch, which fails
+  # ] ++ optionals (xwayland != null) [
+  #   "-Dxwayland-path=${xwayland.out}/bin/Xwayland"
+  # ];
+
+  postInstall = ''
+    wrapProgram $out/bin/weston --prefix LD_LIBRARY_PATH : "${imx-gpu-viv}/lib"
+  '';
 
   passthru.providedSessions = [ "weston" ];
 
-  meta = with lib; {
+  meta = {
     description = "A lightweight and functional Wayland compositor";
     longDescription = ''
       Weston is the reference implementation of a Wayland compositor, as well
