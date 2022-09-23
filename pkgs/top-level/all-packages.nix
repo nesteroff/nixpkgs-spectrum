@@ -9463,6 +9463,9 @@ with pkgs;
 
   nxpmicro-mfgtools = callPackage ../development/tools/misc/nxpmicro-mfgtools { };
 
+  imx-gpu-viv = callPackage ../os-specific/linux/imx-gpu-viv { };
+  imx-g2d = callPackage ../os-specific/linux/imx-g2d { };
+
   nyancat = callPackage ../tools/misc/nyancat { };
 
   nylon = callPackage ../tools/networking/nylon { };
@@ -18693,7 +18696,7 @@ with pkgs;
 
   pixman = callPackage ../development/libraries/pixman { };
 
-  cairo = callPackage ../development/libraries/cairo { };
+  cairo = callPackage ../development/libraries/cairo { x11Support = false; };
 
   cairomm = callPackage ../development/libraries/cairomm { };
 
@@ -20631,13 +20634,8 @@ with pkgs;
 
   ## libGL/libGLU/Mesa stuff
 
-  # Default libGL implementation, should provide headers and
-  # libGL.so/libEGL.so/... to link agains them. Android NDK provides
-  # an OpenGL implementation, we can just use that.
-  libGL = if stdenv.hostPlatform.useAndroidPrebuilt then stdenv
-          else callPackage ../development/libraries/mesa/stubs.nix {
-            inherit (darwin.apple_sdk.frameworks) OpenGL;
-          };
+  # NXP libGL implementation for imx8
+  libGL = callPackage ../os-specific/linux/imx-gpu-viv/default.nix {};
 
   # Default libGLU
   libGLU = mesa_glu;
