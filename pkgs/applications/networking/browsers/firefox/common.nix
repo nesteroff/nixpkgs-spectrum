@@ -65,7 +65,7 @@
 , nss_esr
 , nss_latest
 , pango
-, xorg
+#, xorg
 , zip
 , zlib
 , pkgsBuildBuild
@@ -83,14 +83,14 @@
 
 , alsaSupport ? stdenv.isLinux, alsa-lib
 , ffmpegSupport ? true
-, gssSupport ? true, libkrb5
-, jackSupport ? stdenv.isLinux, libjack2
+, gssSupport ? false, libkrb5
+, jackSupport ? false, libjack2
 , jemallocSupport ? true, jemalloc
-, ltoSupport ? (stdenv.isLinux && stdenv.is64bit), overrideCC, buildPackages
-, pgoSupport ? (stdenv.isLinux && stdenv.isx86_64 && stdenv.hostPlatform == stdenv.buildPlatform), xvfb-run
-, pipewireSupport ? waylandSupport && webrtcSupport
-, pulseaudioSupport ? stdenv.isLinux, libpulseaudio
-, sndioSupport ? stdenv.isLinux, sndio
+, ltoSupport ? false, overrideCC, buildPackages
+, pgoSupport ? false, xvfb-run
+, pipewireSupport ? false
+, pulseaudioSupport ? false, libpulseaudio
+, sndioSupport ? false, sndio
 , waylandSupport ? true, libxkbcommon, libdrm
 
 ## privacy-related options
@@ -100,11 +100,11 @@
 # WARNING: NEVER set any of the options below to `true` by default.
 # Set to `!privacySupport` or `false`.
 
-, crashreporterSupport ? !privacySupport
-, geolocationSupport ? !privacySupport
-, googleAPISupport ? geolocationSupport
-, mlsAPISupport ? geolocationSupport
-, webrtcSupport ? !privacySupport
+, crashreporterSupport ? false
+, geolocationSupport ? false
+, googleAPISupport ? false
+, mlsAPISupport ? false
+, webrtcSupport ? false
 
 # digital rights managemewnt
 
@@ -356,6 +356,7 @@ buildStdenv.mkDerivation ({
     # for firefox, host is buildPlatform, target is hostPlatform
     "--host=${buildStdenv.buildPlatform.config}"
     "--target=${buildStdenv.hostPlatform.config}"
+    "--disable-audio-backends"
   ]
   # LTO is done using clang and lld on Linux.
   ++ lib.optionals ltoSupport [
@@ -412,18 +413,18 @@ buildStdenv.mkDerivation ({
     nasm
     nspr
     pango
-    perl
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXdamage
-    xorg.libXext
-    xorg.libXft
-    xorg.libXi
-    xorg.libXrender
-    xorg.libXt
-    xorg.libXtst
-    xorg.pixman
-    xorg.xorgproto
+#    perl
+#    xorg.libX11
+#    xorg.libXcursor
+#    xorg.libXdamage
+#    xorg.libXext
+#    xorg.libXft
+#    xorg.libXi
+#    xorg.libXrender
+#    xorg.libXt
+#    xorg.libXtst
+#    xorg.pixman
+#    xorg.xorgproto
     zip
     zlib
   ]

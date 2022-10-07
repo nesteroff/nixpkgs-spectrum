@@ -1,5 +1,5 @@
 { stdenv, lib, makeDesktopItem, makeWrapper, makeBinaryWrapper, lndir, config
-, fetchurl, zip, unzip, jq, xdg-utils, writeText
+, fetchurl, zip, unzip, jq, writeText
 
 ## various stuff that can be plugged in
 , ffmpeg, xorg, alsa-lib, libpulseaudio, libcanberra-gtk3, libglvnd, libnotify, opensc
@@ -78,7 +78,7 @@ let
             ++ lib.optional useGlvnd libglvnd
             ++ lib.optionals (cfg.enableQuakeLive or false)
             (with xorg; [ stdenv.cc libX11 libXxf86dga libXxf86vm libXext libXt alsa-lib zlib ])
-            ++ lib.optional (config.pulseaudio or true) libpulseaudio
+            ++ lib.optional (false) libpulseaudio
             ++ lib.optional alsaSupport alsa-lib
             ++ lib.optional sndioSupport sndio
             ++ lib.optional jackSupport libjack2
@@ -252,20 +252,6 @@ let
           mv "$executablePath" "$oldExe"
         fi
 
-        makeWrapper "$oldExe" \
-          "''${executablePath}${nameSuffix}" \
-            --prefix LD_LIBRARY_PATH ':' "$libs" \
-            --suffix-each GTK_PATH ':' "$gtk_modules" \
-            --prefix PATH ':' "${xdg-utils}/bin" \
-            --suffix PATH ':' "$out/bin" \
-            --set MOZ_APP_LAUNCHER "${applicationName}${nameSuffix}" \
-            --set MOZ_SYSTEM_DIR "$out/lib/mozilla" \
-            --set MOZ_LEGACY_PROFILES 1 \
-            --set MOZ_ALLOW_DOWNGRADE 1 \
-            --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH" \
-            --suffix XDG_DATA_DIRS : '${gnome.adwaita-icon-theme}/share' \
-            ${lib.optionalString forceWayland "--set MOZ_ENABLE_WAYLAND 1"} \
-            "''${oldWrapperArgs[@]}"
         #############################
         #                           #
         #   END EXTRA PREF CHANGES  #
