@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchgit
+{ lib, stdenv, fetchurl
 , pkg-config
 , meson, ninja, wayland-scanner
 , python3, wayland
@@ -6,14 +6,13 @@
 
 stdenv.mkDerivation rec {
   pname = "wayland-protocols";
-  version = "1.25";
+  version = "1.26";
 
   doCheck = stdenv.hostPlatform == stdenv.buildPlatform;
 
-  src = fetchgit {
-    url = "https://source.codeaurora.org/external/imx/wayland-protocols-imx.git";
-    rev = "lf-5.15.32-2.0.0";
-    sha256 = "sha256-f/k9do0X2puy3etVdiXs3Jf0fCEMngRL02XwehCjMD0=";
+  src = fetchurl {
+    url = "https://wayland.freedesktop.org/releases/${pname}-${version}.tar.xz";
+    sha256 = "04vgllmpmrv14x3x64ns01vgwx4hriljayjkz9idgbv83i63hly5";
   };
 
   postPatch = lib.optionalString doCheck ''
