@@ -520,7 +520,7 @@ index 00000000..b0a9ee7c
 +        &mut self,
 +        shm_regions: VirtioSharedMemoryList,
 +    ) -> std::result::Result<(), crate::Error> {
-+        todo!("set_shm_regions({:?})", shm_regions)
++        Err(crate::Error::SetShmRegionsNotSupported)
 +    }
 +
 +    fn add_memory_region(
